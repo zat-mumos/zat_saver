@@ -1,0 +1,7 @@
+__pycache__/
+venv/
+.idea/
+dist/
+.eggs/
+__pycache__/
+data/

@@ -1,0 +1,35 @@
+image: rwthika/ros2-ml:humble-desktop-full-tf2.18.0-torch2.5.0
+
+before_script:
+  - apt-get update && apt-get install -y
+
+stages:
+  - dependencies
+  - formatting
+  - typing
+  - docs
+
+python:
+  stage: dependencies
+  script:
+    - pip install --ignore-installed -r requirements.txt
+
+lint:
+  stage: formatting
+  script:
+    - pip install docformatter
+    - pip install ruff
+    - python -m docformatter --recursive --in-place --wrap-summaries 100 --wrap-descriptions 100 test launch zat_saver
+    - python -m ruff check
+
+mypy:
+  stage: typing
+  script:
+    - pip install mypy
+    - python -m mypy --install-types --non-interactive --ignore-missing-imports test/ zat_saver/
+
+docstr:
+  stage: docs
+  script:
+    - pip install docstr-coverage
+    - docstr-coverage test/ zat_saver/ --skip-private --skip-magic
