@@ -82,7 +82,10 @@ class DataSaver(Node):
             for item in msg.data.split(';'):
                 if item:
                     topic, msg_type = item.split(',')
-                    topics_list.append((topic.strip(), eval(msg_type.strip())))
+                    if (topic, msg_type) in self.default_topics:
+                        topics_list.append((topic.strip(), eval(msg_type.strip())))
+                    else:
+                        self.get_logger().error(f"Passed topics/messages do not exist or are not available. topic: {topic} - msg_type: {msg_type}")
 
             if topics_list:
                 self.active_topics = topics_list
