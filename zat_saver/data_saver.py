@@ -15,7 +15,7 @@ class DataSaver(Node):
 
     def __init__(
             self,
-            out_topic: str = '/zat_saver/status',
+            out_topic: str = '/saver/status',
             pub_period: float = 0.5):
         """Initialize ROS components."""
         super().__init__('data_saver')
@@ -57,13 +57,13 @@ class DataSaver(Node):
         # Event subscribers
         self.event_sub = self.create_subscription(
             String,
-            '/zat_saver/event_in',
+            '/saver/event_in',
             self.event_callback,
             10)
 
         self.topics_sub = self.create_subscription(
             String,
-            '/zat_saver/topics',
+            '/saver/topics',
             self.topics_callback,
             10)
 
@@ -157,7 +157,7 @@ def main():
     rclpy.init(args=None)
 
     saver_node = DataSaver(
-        out_topic='/zat_saver/status',
+        out_topic='/saver/status',
         pub_period=0.5)
 
     try:

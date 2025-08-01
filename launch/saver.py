@@ -13,8 +13,8 @@ def generate_launch_description():
     
     out_topic_arg = DeclareLaunchArgument(
         'out_topic',
-        default_value='/zat_saver/status',
-        description='Topic with the status of zat_saver.'
+        default_value='/saver/status',
+        description='Topic with the status of saver.'
     )
     
     saver_node = Node(
