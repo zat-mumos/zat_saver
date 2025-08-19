@@ -17,8 +17,8 @@ def generate_launch_description():
         description='Topic with the status of saver.'
     )
 
-    topics_topic_arg = DeclareLaunchArgument(
-        'topics_topic',
+    available_topics_arg = DeclareLaunchArgument(
+        'available_topics_topic',
         default_value='/saver/available_topics',
         description='Topic to publish available topics list'
     )
@@ -31,13 +31,13 @@ def generate_launch_description():
         parameters=[{
             'pub_period': LaunchConfiguration('pub_period'),
             'out_topic': LaunchConfiguration('out_topic'),
-            'topics_topic': LaunchConfiguration('topics_topic')
+            'available_topics_topic': LaunchConfiguration('available_topics_topic')
         }]
     )
 
     return LaunchDescription([
         pub_period_arg,
         out_topic_arg,
-        topics_topic_arg,
+        available_topics_arg,
         saver_node
     ])

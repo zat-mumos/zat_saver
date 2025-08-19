@@ -17,7 +17,7 @@ class DataSaver(Node):
             self,
             out_topic: str = '/saver/status',
             pub_period: float = 0.5,
-            topics_topic: str = '/saver/available_topics'):
+            available_topics_topic: str = '/saver/available_topics'):
         """Initialize ROS components."""
         super().__init__('data_saver')
 
@@ -27,12 +27,12 @@ class DataSaver(Node):
             parameters=[
                 ('out_topic', out_topic),
                 ('pub_period', pub_period),
-                ('topics_topic', topics_topic)
+                ('available_topics_topic', available_topics_topic)
             ])
 
         self.pub_period = self.get_parameter('pub_period').value
         self.out_topic = self.get_parameter('out_topic').value
-        self.topics_topic = self.get_parameter('topics_topic').value
+        self.available_topics_topic = self.get_parameter('available_topics_topic').value
         self.rosbag_process = None
 
         # Updated topics with your actual mappings
@@ -57,7 +57,7 @@ class DataSaver(Node):
         self.timer = self.create_timer(self.pub_period, self._publish_status)
 
         # Topics publisher
-        self.topics_publisher = self.create_publisher(TopicList, self.topics_topic, 10)
+        self.topics_publisher = self.create_publisher(TopicList, self.available_topics_topic, 10)
         self.topic_timer = self.create_timer(5.0, self._publish_topics)  # Update every 5 seconds
 
         # Event subscribers
@@ -69,7 +69,7 @@ class DataSaver(Node):
 
         self.topics_sub = self.create_subscription(
             String,
-            '/saver/topics',
+            '/saver/selected_topic',
             self.topics_callback,
             10)
 
@@ -91,9 +91,9 @@ class DataSaver(Node):
                                     throttle_duration_sec=5.0)
 
         except Exception as e:
-            self.get_logger().error(f"Error in topic discovery: {str(e)}")
+            self.get_logger().error(f"Error in topic discovery: {repr(e)}")
 
-    def event_callback(self, msg: String):
+    def  event_callback(self, msg: String):
         """Handle start/stop recording events."""
         if msg.data.lower() in ['true', 'start'] and not self.is_recording:
             self.start_recording()
@@ -122,7 +122,7 @@ class DataSaver(Node):
                 if self.is_recording:
                     self.restart_recording()
         except Exception as e:
-            self.get_logger().error(f"Error parsing topics: {str(e)}")
+            self.get_logger().error(f"Error parsing topics: {repr(e)}")
 
     def start_recording(self):
         """Records the active topics and save them in rosbag."""
@@ -186,7 +186,7 @@ def main():
     saver_node = DataSaver(
         out_topic='/saver/status',
         pub_period=0.5,
-        topics_topic='/saver/available_topics')
+        available_topics_topic='/saver/available_topics')
 
     try:
         rclpy.spin(saver_node)
