@@ -6,7 +6,7 @@ from std_msgs.msg import String
 import subprocess
 import os
 from datetime import datetime
-from zat_ros2_msgs.msg import GameEntry, GameEntryResult, Emotions, Poses, EngagementScore, MovellaData, PhysioSensor
+from zat_ros2_msgs.msg import GameEntry, GameEntryResult, Emotions, Poses, EngagementScore, MovellaData, PhysioSensor, TopicInfo, TopicList
 from sensor_msgs.msg import Image
 
 
@@ -16,7 +16,8 @@ class DataSaver(Node):
     def __init__(
             self,
             out_topic: str = '/saver/status',
-            pub_period: float = 0.5):
+            pub_period: float = 0.5,
+            topics_topic: str = '/saver/available_topics'):
         """Initialize ROS components."""
         super().__init__('data_saver')
 
@@ -25,11 +26,13 @@ class DataSaver(Node):
             namespace='',
             parameters=[
                 ('out_topic', out_topic),
-                ('pub_period', pub_period)
+                ('pub_period', pub_period),
+                ('topics_topic', topics_topic)
             ])
 
         self.pub_period = self.get_parameter('pub_period').value
         self.out_topic = self.get_parameter('out_topic').value
+        self.topics_topic = self.get_parameter('topics_topic').value
         self.rosbag_process = None
 
         # Updated topics with your actual mappings
@@ -46,13 +49,16 @@ class DataSaver(Node):
 
         self.active_topics = self.default_topics.copy()
         self.is_recording = False
-        self.writer = None
         self.output_dir = os.path.expanduser('~/zat_recordings')
         os.makedirs(self.output_dir, exist_ok=True)
 
         # Status publisher
         self.status_publisher = self.create_publisher(String, self.out_topic, 10)
         self.timer = self.create_timer(self.pub_period, self._publish_status)
+
+        # Topics publisher
+        self.topics_publisher = self.create_publisher(TopicList, self.topics_topic, 10)
+        self.topic_timer = self.create_timer(5.0, self._publish_topics)  # Update every 5 seconds
 
         # Event subscribers
         self.event_sub = self.create_subscription(
@@ -66,6 +72,26 @@ class DataSaver(Node):
             '/saver/topics',
             self.topics_callback,
             10)
+
+    def _publish_topics(self):
+        """Publish the list of predefined default topics with their active status."""
+        try:
+            # Prepare topic list message
+            topic_list = TopicList()
+
+            for topic_name, topic_type in self.default_topics:
+                topic_info = TopicInfo()
+                topic_info.name = topic_name
+                topic_info.type = str(topic_type)
+                topic_info.active = True if self.get_publishers_info_by_topic(topic_name) else False
+                topic_list.topics.append(topic_info)
+
+            self.topics_publisher.publish(topic_list)
+            self.get_logger().debug(f"Published topic list: {[(t.name, t.active) for t in topic_list.topics]}",
+                                    throttle_duration_sec=5.0)
+
+        except Exception as e:
+            self.get_logger().error(f"Error in topic discovery: {str(e)}")
 
     def event_callback(self, msg: String):
         """Handle start/stop recording events."""
@@ -82,10 +108,13 @@ class DataSaver(Node):
             for item in msg.data.split(';'):
                 if item:
                     topic, msg_type = item.split(',')
-                    if (topic, msg_type) in self.default_topics:
-                        topics_list.append((topic.strip(), eval(msg_type.strip())))
+                    # Find matching default topic
+                    matching_topic = next((t for t in self.default_topics
+                                           if t[0] == topic.strip() and str(t[1]) == msg_type.strip()), None)
+                    if matching_topic:
+                        topics_list.append(matching_topic)
                     else:
-                        self.get_logger().error(f"Passed topics/messages do not exist or are not available. topic: {topic} - msg_type: {msg_type}")
+                        self.get_logger().error(f"Topic not available for recording: {topic} ({msg_type})")
 
             if topics_list:
                 self.active_topics = topics_list
@@ -97,7 +126,6 @@ class DataSaver(Node):
 
     def start_recording(self):
         """Records the active topics and save them in rosbag."""
-
         if self.is_recording:
             self.get_logger().warn("Recording already in progress")
             return
@@ -108,7 +136,7 @@ class DataSaver(Node):
 
         # Create topic list
         topic_args = [topic for topic, _ in self.active_topics]
-        self.get_logger().info(f"topic list: {topic_args}")
+        self.get_logger().info(f"Starting recording with topics: {topic_args}")
 
         # Launch rosbag record
         cmd = ['ros2', 'bag', 'record', '-o', bag_path] + topic_args
@@ -136,7 +164,6 @@ class DataSaver(Node):
             self.stop_recording()
             self.start_recording()
 
-
     def _publish_status(self):
         """Publish status of the component (active/not active)."""
         try:
@@ -158,7 +185,8 @@ def main():
 
     saver_node = DataSaver(
         out_topic='/saver/status',
-        pub_period=0.5)
+        pub_period=0.5,
+        topics_topic='/saver/available_topics')
 
     try:
         rclpy.spin(saver_node)
@@ -167,6 +195,7 @@ def main():
     finally:
         saver_node.destroy_node()
         rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()
