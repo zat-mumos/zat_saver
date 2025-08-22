@@ -69,7 +69,7 @@ class DataSaver(Node):
 
         self.topics_sub = self.create_subscription(
             String,
-            '/saver/selected_topic',
+            '/saver/selected_topics',
             self.topics_callback,
             10)
 
