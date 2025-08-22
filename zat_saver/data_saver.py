@@ -17,7 +17,10 @@ class DataSaver(Node):
             self,
             out_topic: str = '/saver/status',
             pub_period: float = 0.5,
-            available_topics_topic: str = '/saver/available_topics'):
+            selected_topics_topic: str = '/saver/selected_topics',
+            available_topics_topic: str = '/saver/available_topics',
+            recording_status_topic: str = '/saver/event_in',
+            rosbag_recording_dir: str = '~/zat_recordings'):
         """Initialize ROS components."""
         super().__init__('data_saver')
 
@@ -27,12 +30,18 @@ class DataSaver(Node):
             parameters=[
                 ('out_topic', out_topic),
                 ('pub_period', pub_period),
-                ('available_topics_topic', available_topics_topic)
+                ('available_topics_topic', available_topics_topic),
+                ('selected_topics_topic', selected_topics_topic),
+                ('recording_status_topic', recording_status_topic),
+                ('rosbag_recording_dir', rosbag_recording_dir)
             ])
 
         self.pub_period = self.get_parameter('pub_period').value
         self.out_topic = self.get_parameter('out_topic').value
         self.available_topics_topic = self.get_parameter('available_topics_topic').value
+        self.selected_topics_topic = self.get_parameter('selected_topics_topic').value
+        self.recording_status_topic = self.get_parameter('recording_status_topic').value
+        self.rosbag_recording_dir = self.get_parameter('rosbag_recording_dir').value
         self.rosbag_process = None
 
         # Updated topics with your actual mappings
@@ -49,7 +58,7 @@ class DataSaver(Node):
 
         self.active_topics = self.default_topics.copy()
         self.is_recording = False
-        self.output_dir = os.path.expanduser('~/zat_recordings')
+        self.output_dir = os.path.expanduser(self.rosbag_recording_dir)
         os.makedirs(self.output_dir, exist_ok=True)
 
         # Status publisher
@@ -63,13 +72,13 @@ class DataSaver(Node):
         # Event subscribers
         self.event_sub = self.create_subscription(
             String,
-            '/saver/event_in',
+            self.recording_status_topic,
             self.event_callback,
             10)
 
         self.topics_sub = self.create_subscription(
             String,
-            '/saver/selected_topics',
+            self.selected_topics_topic,
             self.topics_callback,
             10)
 
@@ -186,7 +195,10 @@ def main():
     saver_node = DataSaver(
         out_topic='/saver/status',
         pub_period=0.5,
-        available_topics_topic='/saver/available_topics')
+        selected_topics_topic='/saver/selected_topics',
+        available_topics_topic='/saver/available_topics',
+        rosbag_recording_dir='rosbag_recording_dir',
+        recording_status_topic='/saver/event_in')
 
     try:
         rclpy.spin(saver_node)
