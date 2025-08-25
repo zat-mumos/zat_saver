@@ -6,7 +6,7 @@ from std_msgs.msg import String
 import subprocess
 import os
 from datetime import datetime
-from zat_ros2_msgs.msg import GameEntry, GameEntryResult, Emotions, Poses, EngagementScore, MovellaData, PhysioSensor, TopicInfo, TopicList
+from zat_ros2_msgs.msg import GameEntry, GameEntryResult, Emotions, Poses, EngagementScore, MovellaData, PhysioSensor, TopicInfo, TopicList, EmotibitMsg, BciData
 from sensor_msgs.msg import Image
 
 
@@ -53,7 +53,14 @@ class DataSaver(Node):
             ('/cam1/engagement/score', EngagementScore),
             ('/camera/cam_1/color/image_raw', Image),
             ('/sensor/movella/data', MovellaData),
-            ('/sensor/esense_data', PhysioSensor)
+            ('/sensor/esense_data', PhysioSensor),
+            ('/emotibit/acc', EmotibitMsg),
+            ('/emotibit/gyro', EmotibitMsg),
+            ('/emotibit/mag', EmotibitMsg),
+            ('/emotibit/ppg', EmotibitMsg),
+            ('/emotibit/eda', EmotibitMsg),
+            ('/emotibit/temp', EmotibitMsg),
+            ('/bci/eeg', BciData)
         ]
 
         self.active_topics = self.default_topics.copy()
