@@ -46,6 +46,12 @@ ROS 2 package for recording sensor data from the ZAT pipeline to rosbag2 files.
 - Python 3.8+  
 
 ### Build Instructions
+#### Install dependencies
+install the following packages if you dont have them already:
+- rclpy
+- std_msgs
+- sensor_msgs
+- sudo apt install ros-humble-rosbag2-py
 
 ```bash
 cd zat_ws/src
@@ -53,12 +59,8 @@ cd zat_ws/src
 # Clone the package
 git clone git@git.inf.h-brs.de:zat-rhein-ruhr/zat-prototype-demo/zat_saver.git
 
-# Install dependencies
-cd zat_saver
-pip install -r requirements.txt
-
 # Build the package
-cd ../..   #(zat_ws)
+cd ..  #(zat_ws)
 colcon build --packages-select zat_saver
 source install/setup.bash
 ```
@@ -79,10 +81,10 @@ Control recording:
 
 ```bash
 # Start recording
-ros2 topic pub --once /zat_saver/event_in std_msgs/msg/String "{data: 'true'}"
+ros2 topic pub --once /saver/event_in std_msgs/msg/String "{data: 'true'}"
 
 # Stop recording
-ros2 topic pub --once /zat_saver/event_in std_msgs/msg/String "{data: 'false'}"
+ros2 topic pub --once /saver/event_in std_msgs/msg/String "{data: 'false'}"
 ```
 
 ---
@@ -95,7 +97,7 @@ Records all supported topics listed in the table above.
 **Custom Topic Selection**  
 
 ```bash
-ros2 topic pub /zat_saver/topics std_msgs/msg/String "{data: '/camera/cam_1/color/image_raw,Image;/language_learning/game/controller/state,GameEntry'}"
+ros2 topic pub /saver/selected_topics std_msgs/msg/String "{data: '/camera/cam_1/color/image_raw,Image;/language_learning/game/controller/state,GameEntry'}"
 ```
 
 **Format Specifications:**
@@ -107,7 +109,7 @@ ros2 topic pub /zat_saver/topics std_msgs/msg/String "{data: '/camera/cam_1/colo
 **Example with multiple topics:**
 
 ```bash
-ros2 topic pub /zat_saver/topics std_msgs/msg/String "{data: '/cam1/face/emotions,Emotions;/cam1/pose/landmarks,Poses;/cam1/engagement/score,EngagementScore'}"
+ros2 topic pub /saver/selected_topics std_msgs/msg/String "{data: '/cam1/face/emotions,Emotions;/cam1/pose/landmarks,Poses;/cam1/engagement/score,EngagementScore'}"
 ```
 
 ---
@@ -116,23 +118,25 @@ ros2 topic pub /zat_saver/topics std_msgs/msg/String "{data: '/cam1/face/emotion
 
 **Available Parameters:**
 
-| Parameter      | Type    | Default             | Description                          |
-|----------------|---------|---------------------|--------------------------------------|
-| `status_topic` | string  | `/zat_saver/status` | Topic for publishing recorder status |
-
-
----
+| Parameter                | Type    | Default                   | Description                                             |
+|--------------------------|---------|---------------------------|---------------------------------------------------------|
+| `out_topic`              | string  | `/zat_saver/status`       | Topic for publishing recorder status                    |
+| `selected_topics_topic`  | string  | `/saver/selected_topics`  | Topic to select data_saver topics for recording         |
+| `available_topics_topic` | string  | `/saver/available_topics` | Topic to publish available topics list                  |
+| `recording_status_topic` | string  | `/saver/event_in`         | Topic to start and stop recording                       |
+| `rosbag_recording_dir`   | string  | `~/zat_recordings`        | Directory in which the rosbag recordings will be stored |
+| `pub_period`             | string  | `0.5`                     | Period of published messages                            |
 
 ## Status Monitoring
 
 The node continuously publishes its status:
 
 ```bash
-ros2 topic echo /zat_saver/status
+ros2 topic echo /saver/status
 ```
 
 ### Status check
-`zat_saver` continuously publishas a message of type `String.msg` on the topic `/zat_saver/status`, with the following content:
+`zat_saver` continuously publishas a message of type `String.msg` on the topic `/saver/status`, with the following content:
 - `{data: 'false'}` if the component is deactivated
 - `{data: 'true'}` if the component is activated
 
