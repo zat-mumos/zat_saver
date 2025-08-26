@@ -7,7 +7,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     pub_period_arg = DeclareLaunchArgument(
         'pub_period',
-        default_value='0.5',
+        default_value='4.0',
         description='Period of published messages'
     )
 
@@ -32,7 +32,7 @@ def generate_launch_description():
     recording_status_topic_arg = DeclareLaunchArgument(
         'recording_status_topic',
         default_value='/saver/event_in',
-        description='Topic with the recording status for the saver node'
+        description='Topic to start and stop recording'
     )
 
     rosbag_recording_dir = DeclareLaunchArgument(
