@@ -22,7 +22,7 @@ ROS 2 package for recording sensor data from the ZAT pipeline to rosbag2 files.
 | `EngagementScore`  | `/cam1/engagement/score`                           |
 | `Image`              | `/camera/cam_1/color/image_raw`                    |
 | `MovellaData`      | `/sensor/movella/data`                             |
-| `PhysioSensor`     | `/sensor/esense_data`                              |
+| `EsenseStream`     | `/sensor/esense_data`                              |
 | `EmotibitMsg`     | `/emotibit/acc`<br>`/emotibit/gyro`<br>`/emotibit/mag`<br>`/emotibit/ppg`<br>`/emotibit/eda`<br>`/emotibit/temp`                              |
 | `BciData`     | `/bci/eeg`                              |
 
