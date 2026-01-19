@@ -36,13 +36,13 @@ def generate_launch_description():
     )
 
     rosbag_recording_external_dir = DeclareLaunchArgument(
-        'rosbag_recording_dir',
+        'rosbag_recording_external_dir',
         default_value='/media/zat/sn-backup-1',
         description='Directory in which the rosbag recordings will be stored'
     )
 
     rosbag_recording_local_dir = DeclareLaunchArgument(
-        'rosbag_recording_dir',
+        'rosbag_recording_local_dir',
         default_value='~/zat_recordings',
         description='Directory in which the rosbag recordings will be stored'
     )
