@@ -35,8 +35,14 @@ def generate_launch_description():
         description='Topic to start and stop recording'
     )
 
-    rosbag_recording_dir = DeclareLaunchArgument(
-        'rosbag_recording_dir',
+    rosbag_recording_external_dir = DeclareLaunchArgument(
+        'rosbag_recording_external_dir',
+        default_value='/media/zat/sn-backup-1',
+        description='Directory in which the rosbag recordings will be stored'
+    )
+
+    rosbag_recording_local_dir = DeclareLaunchArgument(
+        'rosbag_recording_local_dir',
         default_value='~/zat_recordings',
         description='Directory in which the rosbag recordings will be stored'
     )
@@ -52,7 +58,8 @@ def generate_launch_description():
             'selected_topics_topic': LaunchConfiguration('selected_topics_topic'),
             'available_topics_topic': LaunchConfiguration('available_topics_topic'),
             'recording_status_topic': LaunchConfiguration('recording_status_topic'),
-            'rosbag_recording_dir': LaunchConfiguration('rosbag_recording_dir')
+            'rosbag_recording_external_dir': LaunchConfiguration('rosbag_recording_external_dir'),
+            'rosbag_recording_local_dir': LaunchConfiguration('rosbag_recording_local_dir')
         }]
     )
 
@@ -62,6 +69,7 @@ def generate_launch_description():
         selected_topics_topic_arg,
         available_topics_arg,
         recording_status_topic_arg,
-        rosbag_recording_dir,
+        rosbag_recording_external_dir,
+        rosbag_recording_local_dir,
         saver_node
     ])

@@ -9,7 +9,6 @@ from datetime import datetime
 from zat_ros2_msgs.msg import GameEntry, GameEntryResult, Emotions, Poses, EngagementScore, MovellaData, EsenseStream, TopicInfo, TopicList, EmotibitMsg, BciData
 from sensor_msgs.msg import Image
 
-
 class DataSaver(Node):
     """Class representing a data saver for the sensor case pipeline."""
 
@@ -20,7 +19,8 @@ class DataSaver(Node):
             selected_topics_topic: str = '/saver/selected_topics',
             available_topics_topic: str = '/saver/available_topics',
             recording_status_topic: str = '/saver/event_in',
-            rosbag_recording_dir: str = '~/zat_recordings'):
+            rosbag_recording_external_dir: str = '/media/zat/sn-backup-1',
+            rosbag_recording_local_dir: str = '~/zat_recordings'):
         """Initialize ROS components."""
         super().__init__('data_saver')
 
@@ -33,7 +33,8 @@ class DataSaver(Node):
                 ('available_topics_topic', available_topics_topic),
                 ('selected_topics_topic', selected_topics_topic),
                 ('recording_status_topic', recording_status_topic),
-                ('rosbag_recording_dir', rosbag_recording_dir)
+                ('rosbag_recording_external_dir', rosbag_recording_external_dir),
+                ('rosbag_recording_local_dir', rosbag_recording_local_dir)
             ])
 
         self.pub_period = self.get_parameter('pub_period').value
@@ -41,7 +42,8 @@ class DataSaver(Node):
         self.available_topics_topic = self.get_parameter('available_topics_topic').value
         self.selected_topics_topic = self.get_parameter('selected_topics_topic').value
         self.recording_status_topic = self.get_parameter('recording_status_topic').value
-        self.rosbag_recording_dir = self.get_parameter('rosbag_recording_dir').value
+        self.rosbag_recording_local_dir = self.get_parameter('rosbag_recording_local_dir').value
+        self.rosbag_recording_external_dir = self.get_parameter('rosbag_recording_external_dir').value
         self.rosbag_process = None
 
         # Updated topics with your actual mappings
@@ -52,7 +54,7 @@ class DataSaver(Node):
             ('/cam1/pose/landmarks', Poses),
             ('/cam1/engagement/score', EngagementScore),
             ('/camera/cam_1/color/image_raw', Image),
-            ('/sensor/movella/data', MovellaData),
+            ('/sensor/movella/imu_data', MovellaData),
             ('/sensor/esense/data', EsenseStream),
             ('/emotibit/acc', EmotibitMsg),
             ('/emotibit/gyro', EmotibitMsg),
@@ -65,8 +67,8 @@ class DataSaver(Node):
 
         self.active_topics = self.default_topics.copy()
         self.is_recording = False
-        self.output_dir = os.path.expanduser(self.rosbag_recording_dir)
-        os.makedirs(self.output_dir, exist_ok=True)
+        
+        self.output_dir = self.rosbag_recording_local_dir
 
         # Status publisher
         self.status_publisher = self.create_publisher(String, self.out_topic, 10)
@@ -148,6 +150,11 @@ class DataSaver(Node):
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         bag_name = f"zat_recording_{timestamp}"
+        
+        self.output_dir = self.rosbag_recording_local_dir
+        if os.path.ismount(self.rosbag_recording_external_dir):
+            self.output_dir = self.rosbag_recording_external_dir + "/zat_recordings"
+        
         bag_path = os.path.join(self.output_dir, bag_name)
 
         # Create topic list
@@ -204,7 +211,8 @@ def main():
         pub_period=0.5,
         selected_topics_topic='/saver/selected_topics',
         available_topics_topic='/saver/available_topics',
-        rosbag_recording_dir='rosbag_recording_dir',
+        rosbag_recording_external_dir='rosbag_recording_external_dir',
+        rosbag_recording_local_dir='rosbag_recording_local_dir',
         recording_status_topic='/saver/event_in')
 
     try:
