@@ -68,7 +68,7 @@ class DataSaver(Node):
         self.active_topics = self.default_topics.copy()
         self.is_recording = False
         
-        self.output_dir = self.rosbag_recording_dir
+        self.output_dir = self.rosbag_recording_local_dir
 
         # Status publisher
         self.status_publisher = self.create_publisher(String, self.out_topic, 10)
