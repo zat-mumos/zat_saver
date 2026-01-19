@@ -9,7 +9,6 @@ from datetime import datetime
 from zat_ros2_msgs.msg import GameEntry, GameEntryResult, Emotions, Poses, EngagementScore, MovellaData, EsenseStream, TopicInfo, TopicList, EmotibitMsg, BciData
 from sensor_msgs.msg import Image
 
-
 class DataSaver(Node):
     """Class representing a data saver for the sensor case pipeline."""
 
@@ -20,7 +19,7 @@ class DataSaver(Node):
             selected_topics_topic: str = '/saver/selected_topics',
             available_topics_topic: str = '/saver/available_topics',
             recording_status_topic: str = '/saver/event_in',
-            rosbag_recording_dir: str = '~/zat_recordings'):
+            rosbag_recording_dir: str = '/media/zat/sn-backup-1'):
         """Initialize ROS components."""
         super().__init__('data_saver')
 
@@ -52,7 +51,7 @@ class DataSaver(Node):
             ('/cam1/pose/landmarks', Poses),
             ('/cam1/engagement/score', EngagementScore),
             ('/camera/cam_1/color/image_raw', Image),
-            ('/sensor/movella/data', MovellaData),
+            ('/sensor/movella/imu_data', MovellaData),
             ('/sensor/esense/data', EsenseStream),
             ('/emotibit/acc', EmotibitMsg),
             ('/emotibit/gyro', EmotibitMsg),
@@ -65,8 +64,10 @@ class DataSaver(Node):
 
         self.active_topics = self.default_topics.copy()
         self.is_recording = False
-        self.output_dir = os.path.expanduser(self.rosbag_recording_dir)
-        os.makedirs(self.output_dir, exist_ok=True)
+        
+        self.output_dir = self.rosbag_recording_dir
+        #disk_thread = threading.Thread(target=disk_setup, daemon=True)
+        #disk_thread.start()	
 
         # Status publisher
         self.status_publisher = self.create_publisher(String, self.out_topic, 10)
@@ -148,6 +149,11 @@ class DataSaver(Node):
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         bag_name = f"zat_recording_{timestamp}"
+        
+        self.output_dir = self.rosbag_recording_dir
+        if os.path.ismount("/media/zat/sn-backup-1"):
+            self.output_dir ="/media/zat/sn-backup-1/zat_recordings"
+        
         bag_path = os.path.join(self.output_dir, bag_name)
 
         # Create topic list
