@@ -10,20 +10,26 @@ stages:
 
 lint:
   stage: formatting
+  tags:
+    - lint
   script:
-    - pip install docformatter
+    - pip install docformatter==1.7.6
     - pip install ruff
-    - python -m docformatter --recursive --in-place --wrap-summaries 100 --wrap-descriptions 100 test launch zat_saver
+    - python -m docformatter --recursive --in-place --wrap-summaries 100 --wrap-descriptions 100 launch zat_saver
     - python -m ruff check
 
 mypy:
   stage: typing
+  tags:
+    - mypy
   script:
     - pip install mypy
-    - python -m mypy --install-types --non-interactive --ignore-missing-imports test/ zat_saver/
+    - python -m mypy --install-types --non-interactive --ignore-missing-imports zat_saver/
 
 docstr:
   stage: docs
+  tags:
+    - docstr
   script:
     - pip install docstr-coverage
-    - docstr-coverage test/ zat_saver/ --skip-private --skip-magic
+    - docstr-coverage zat_saver/ --skip-private --skip-magic

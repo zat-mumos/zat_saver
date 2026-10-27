@@ -1,13 +1,68 @@
-"""Node for saving data from the ZAT sensor case pipeline."""
+# © 2026 Hochschule Bonn-Rhein-Sieg <https://www.h-brs.de/>
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+# Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program. If not, see <https://www.gnu.org/licenses/>.
+"""A ROS node that records selected sensor and pipeline topics to rosbag files on demand.
+
+Subscribers:
+- selected_topics_topic (std_msgs/String, default: '/saver/selected_topics'): comma/semicolon-separated list of topics (and types) to record
+- recording_status_topic (std_msgs/String, default: '/saver/event_in'): start/stop recording events ('start'/'true' or 'stop'/'false')
+Publishers:
+- out_topic (std_msgs/String, default: '/saver/status'): current recording status (true/false)
+- available_topics_topic (zat_ros2_msgs/TopicList, default: '/saver/available_topics'): list of predefined topics with their active status
+Parameters:
+- out_topic (str, default: '/saver/status')
+- pub_period (float, default: 0.5)
+- selected_topics_topic (str, default: '/saver/selected_topics')
+- available_topics_topic (str, default: '/saver/available_topics')
+- recording_status_topic (str, default: '/saver/event_in')
+- rosbag_recording_external_dir (str, default: '/media/zat/sn-backup-1')
+- rosbag_recording_local_dir (str, default: '~/zat_recordings')
+Description:
+This node maintains a predefined list of default topics from the ZAT sensor pipeline (game state,
+emotions, poses, engagement score, camera image, Movella IMU data, eSense stream, EmotiBit
+channels, and BCI/EEG data) and periodically publishes which of them are currently active. On
+receiving a start event, it launches 'ros2 bag record' for the currently selected topics, saving
+to an external drive if mounted or otherwise to a local directory; on a stop event it terminates
+the recording process. The set of topics to record can be updated at runtime via the selected
+topics subscriber, which restarts an in-progress recording with the new topic list.
+Author:
+Behrouz Ghamkhar <behrouz.ghamkhar@smail.inf.h-brs.de>
+Michal Stolarz <michal.stolarz@h-brs.de>
+"""
+
+import os
+import subprocess
+from datetime import datetime
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
-import subprocess
-import os
-from datetime import datetime
-from zat_ros2_msgs.msg import GameEntry, GameEntryResult, Emotions, Poses, EngagementScore, MovellaData, EsenseStream, TopicInfo, TopicList, EmotibitMsg, BciData
 from sensor_msgs.msg import Image
+from std_msgs.msg import String
+from zat_ros2_msgs.msg import (
+    BciData,
+    EmotibitMsg,
+    Emotions,
+    EngagementScore,
+    EsenseStream,
+    GameEntry,
+    GameEntryResult,
+    MovellaData,
+    Poses,
+    TopicInfo,
+    TopicList,
+)
+
 
 class DataSaver(Node):
     """Class representing a data saver for the sensor case pipeline."""
@@ -67,7 +122,7 @@ class DataSaver(Node):
 
         self.active_topics = self.default_topics.copy()
         self.is_recording = False
-        
+
         self.output_dir = self.rosbag_recording_local_dir
 
         # Status publisher
@@ -101,17 +156,17 @@ class DataSaver(Node):
                 topic_info = TopicInfo()
                 topic_info.name = topic_name
                 topic_info.type = str(topic_type)
-                topic_info.active = True if self.get_publishers_info_by_topic(topic_name) else False
+                topic_info.active = bool(self.get_publishers_info_by_topic(topic_name))
                 topic_list.topics.append(topic_info)
 
             self.topics_publisher.publish(topic_list)
             self.get_logger().debug(f"Published topic list: {[(t.name, t.active) for t in topic_list.topics]}",
                                     throttle_duration_sec=5.0)
 
-        except Exception as e:
-            self.get_logger().error(f"Error in topic discovery: {repr(e)}")
+        except (RuntimeError, ValueError) as e:
+            self.get_logger().error(f"Error in topic discovery: {e!r}")
 
-    def  event_callback(self, msg: String):
+    def event_callback(self, msg: String):
         """Handle start/stop recording events."""
         if msg.data.lower() in ['true', 'start'] and not self.is_recording:
             self.start_recording()
@@ -139,22 +194,22 @@ class DataSaver(Node):
                 self.get_logger().info(f"Updated topics to record: {self.active_topics}")
                 if self.is_recording:
                     self.restart_recording()
-        except Exception as e:
-            self.get_logger().error(f"Error parsing topics: {repr(e)}")
+        except ValueError as e:
+            self.get_logger().error(f"Error parsing topics: {e!r}")
 
     def start_recording(self):
-        """Records the active topics and save them in rosbag."""
+        """Record the active topics and save them in rosbag."""
         if self.is_recording:
             self.get_logger().warn("Recording already in progress")
             return
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().astimezone().strftime("%Y%m%d_%H%M%S")
         bag_name = f"zat_recording_{timestamp}"
-        
+
         self.output_dir = self.rosbag_recording_local_dir
         if os.path.ismount(self.rosbag_recording_external_dir):
             self.output_dir = self.rosbag_recording_external_dir + "/zat_recordings"
-        
+
         bag_path = os.path.join(self.output_dir, bag_name)
 
         # Create topic list
@@ -168,7 +223,7 @@ class DataSaver(Node):
         self.get_logger().info(f"Started rosbag recording to: {bag_path}")
 
     def stop_recording(self):
-        """Stops recording."""
+        """Stop recording."""
         if not self.is_recording:
             self.get_logger().warn("No active recording to stop")
             return
@@ -193,7 +248,7 @@ class DataSaver(Node):
             status_msg = String()
             status_msg.data = str(self.is_recording).lower()
             self.status_publisher.publish(status_msg)
-        except Exception as err:
+        except RuntimeError as err:
             self.get_logger().error(repr(err))
 
     def __del__(self):
@@ -211,8 +266,8 @@ def main():
         pub_period=0.5,
         selected_topics_topic='/saver/selected_topics',
         available_topics_topic='/saver/available_topics',
-        rosbag_recording_external_dir='rosbag_recording_external_dir',
-        rosbag_recording_local_dir='rosbag_recording_local_dir',
+        rosbag_recording_external_dir='/media/zat/sn-backup-1',
+        rosbag_recording_local_dir='~/zat_recordings',
         recording_status_topic='/saver/event_in')
 
     try:
