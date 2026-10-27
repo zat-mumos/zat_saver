@@ -1,7 +1,43 @@
-from launch import LaunchDescription
+# © 2026 Hochschule Bonn-Rhein-Sieg <https://www.h-brs.de/>
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+# Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program. If not, see <https://www.gnu.org/licenses/>.
+"""ROS2 launch file for the standalone data saver (rosbag recording) node.
+
+Nodes Launched:
+- saver (zat_saver): records selected topics to rosbag files based on start/stop events
+Parameters:
+- pub_period (float, default: 4.0)
+- out_topic (str, default: '/saver/status')
+- selected_topics_topic (str, default: '/saver/selected_topics')
+- available_topics_topic (str, default: '/saver/available_topics')
+- recording_status_topic (str, default: '/saver/event_in')
+- rosbag_recording_external_dir (str, default: '/media/zat/sn-backup-1')
+- rosbag_recording_local_dir (str, default: '~/zat_recordings')
+Description:
+This launch file starts the 'saver' node on its own, configuring the topics used to report
+status, list available topics, receive topic selections, and receive recording start/stop
+events, along with the local and external directories used to store rosbag recordings.
+Author:
+Behrouz Ghamkhar <behrouz.ghamkhar@smail.inf.h-brs.de>
+Michal Stolarz <michal.stolarz@h-brs.de>
+"""
+
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+
+from launch import LaunchDescription
 
 
 def generate_launch_description():
