@@ -2,6 +2,7 @@ image: rwthika/ros2-ml:humble-desktop-full-tf2.18.0-torch2.5.0
 
 before_script:
   - apt-get update && apt-get install -y
+  - python -m pip install --upgrade pip
 
 stages:
   - formatting
