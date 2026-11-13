@@ -57,7 +57,7 @@ install the following packages if you dont have them already:
 cd zat_ws/src
 
 # Clone the package
-git clone git@git.inf.h-brs.de:zat-rhein-ruhr/zat-prototype-demo/zat_saver.git
+git clone git@github.com:zat-mumos/zat_saver.git
 
 # Build the package
 cd ..  #(zat_ws)
